@@ -5,7 +5,6 @@
  * CCN War Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { CcnPartida } from './ccnPartida';
 
-export interface HealthStatus {
-  status: string;
-}
+export type CcnPartidaList = CcnPartida[];

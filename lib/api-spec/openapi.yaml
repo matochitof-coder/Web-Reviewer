@@ -3,20 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CCN War Tracker API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: ccn
+    description: Competitive Clash Network operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +25,135 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /ccn/guerras:
+    get:
+      operationId: getCcnGuerras
+      tags: [ccn]
+      summary: Get CCN wars by day
+      parameters:
+        - name: offset
+          in: query
+          description: "0 = today, 1 = tomorrow"
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of wars
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnGuerraList"
+
+  /ccn/ranking-elo:
+    get:
+      operationId: getCcnRankingElo
+      tags: [ccn]
+      summary: Get CCN ELO ranking
+      responses:
+        "200":
+          description: ELO ranking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnRankingEloList"
+
+  /ccn/ranking-mensual:
+    get:
+      operationId: getCcnRankingMensual
+      tags: [ccn]
+      summary: Get CCN monthly ranking
+      responses:
+        "200":
+          description: Monthly ranking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnRankingMensualList"
+
+  /ccn/torneos:
+    get:
+      operationId: getCcnTorneos
+      tags: [ccn]
+      summary: Get active CCN tournaments
+      responses:
+        "200":
+          description: Active tournaments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnTorneoList"
+
+  /ccn/equipo:
+    get:
+      operationId: searchCcnEquipo
+      tags: [ccn]
+      summary: Search CCN team by name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Team found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnEquipo"
+        "404":
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /ccn/equipo/{id}/partidas:
+    get:
+      operationId: getCcnEquipoPartidas
+      tags: [ccn]
+      summary: Get matches for a CCN team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Team matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnPartidaList"
+
+  /ccn/equipo/{id}/ultimo-partido:
+    get:
+      operationId: getCcnUltimoPartido
+      tags: [ccn]
+      summary: Get last match for a CCN team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Last match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CcnPartida"
+        "404":
+          description: No matches found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +164,209 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    CcnEquipo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        clanTag:
+          type: ["string", "null"]
+        clanName:
+          type: ["string", "null"]
+        region:
+          type: ["string", "null"]
+        elo:
+          type: ["number", "null"]
+        rank:
+          type: ["integer", "null"]
+        wins:
+          type: ["integer", "null"]
+        losses:
+          type: ["integer", "null"]
+        badgeUrl:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    CcnPartida:
+      type: object
+      properties:
+        id:
+          type: string
+        homeTeam:
+          $ref: "#/components/schemas/CcnEquipo"
+        awayTeam:
+          $ref: "#/components/schemas/CcnEquipo"
+        homeStars:
+          type: ["integer", "null"]
+        awayStars:
+          type: ["integer", "null"]
+        homeDestruction:
+          type: ["number", "null"]
+        awayDestruction:
+          type: ["number", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+        status:
+          type: string
+        tournamentName:
+          type: ["string", "null"]
+        winner:
+          type: ["string", "null"]
+      required:
+        - id
+        - homeTeam
+        - awayTeam
+        - status
+
+    CcnPartidaList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CcnPartida"
+
+    CcnGuerraItem:
+      type: object
+      properties:
+        id:
+          type: string
+        homeTeam:
+          type: string
+        awayTeam:
+          type: string
+        homeTag:
+          type: ["string", "null"]
+        awayTag:
+          type: ["string", "null"]
+        scheduledAt:
+          type: string
+        scheduledAtSv:
+          type: string
+        scheduledAtAr:
+          type: string
+        status:
+          type: string
+        tournamentName:
+          type: ["string", "null"]
+        homeStars:
+          type: ["integer", "null"]
+        awayStars:
+          type: ["integer", "null"]
+        homeDestruction:
+          type: ["number", "null"]
+        awayDestruction:
+          type: ["number", "null"]
+        winner:
+          type: ["string", "null"]
+      required:
+        - id
+        - homeTeam
+        - awayTeam
+        - scheduledAt
+        - scheduledAtSv
+        - scheduledAtAr
+        - status
+
+    CcnGuerraList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CcnGuerraItem"
+
+    CcnRankingEloItem:
+      type: object
+      properties:
+        rank:
+          type: integer
+        teamId:
+          type: string
+        teamName:
+          type: string
+        elo:
+          type: number
+        wins:
+          type: integer
+        losses:
+          type: integer
+        clanTag:
+          type: ["string", "null"]
+        badgeUrl:
+          type: ["string", "null"]
+      required:
+        - rank
+        - teamId
+        - teamName
+        - elo
+        - wins
+        - losses
+
+    CcnRankingEloList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CcnRankingEloItem"
+
+    CcnRankingMensualItem:
+      type: object
+      properties:
+        rank:
+          type: integer
+        teamId:
+          type: string
+        teamName:
+          type: string
+        points:
+          type: number
+        wins:
+          type: integer
+        losses:
+          type: integer
+        clanTag:
+          type: ["string", "null"]
+      required:
+        - rank
+        - teamId
+        - teamName
+        - points
+        - wins
+        - losses
+
+    CcnRankingMensualList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CcnRankingMensualItem"
+
+    CcnTorneo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        startDate:
+          type: ["string", "null"]
+        endDate:
+          type: ["string", "null"]
+        region:
+          type: ["string", "null"]
+        teamsCount:
+          type: ["integer", "null"]
+      required:
+        - id
+        - name
+        - status
+
+    CcnTorneoList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CcnTorneo"

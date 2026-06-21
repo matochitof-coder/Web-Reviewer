@@ -5,7 +5,6 @@
  * CCN War Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { CcnRankingEloItem } from './ccnRankingEloItem';
 
-export interface HealthStatus {
-  status: string;
-}
+export type CcnRankingEloList = CcnRankingEloItem[];
