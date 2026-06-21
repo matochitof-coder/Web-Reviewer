@@ -9,4 +9,6 @@ router.use(healthRouter);
 router.use(ccnRouter);
 router.use(clanRouter);
 
+router.get("/mi-ip", async (_req, res) => { const r = await fetch("https://api.ipify.org?format=json"); const data = await r.json(); res.json(data); });
+
 export default router;
