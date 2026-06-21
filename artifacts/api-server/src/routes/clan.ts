@@ -1,14 +1,15 @@
 import { Router, type IRouter } from "express";
+import { getCocApiKey } from "../coc-auth";
 
 const router: IRouter = Router();
 
 const COC_BASE = "https://api.clashofclans.com/v1";
-const COC_API_KEY = process.env.COC_API_KEY ?? "";
 
 async function cocApiGet(path: string): Promise<unknown> {
+  const apiKey = await getCocApiKey();
   const res = await fetch(`${COC_BASE}${path}`, {
     headers: {
-      Authorization: `Bearer ${COC_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       Accept: "application/json",
     },
   });
