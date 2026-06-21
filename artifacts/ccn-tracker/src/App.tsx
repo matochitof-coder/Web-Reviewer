@@ -9,8 +9,8 @@ import Ranking from "@/pages/ranking";
 import Qualifier from "@/pages/qualifier";
 import Tournaments from "@/pages/tournaments";
 import TeamSearch from "@/pages/team-search";
+import MiClan from "@/pages/mi-clan";
 import { useEffect } from "react";
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,10 +29,11 @@ function Router() {
         <Route path="/clasificatorio" component={Qualifier} />
         <Route path="/torneos" component={Tournaments} />
         <Route path="/equipo" component={TeamSearch} />
+        <Route path="/mi-clan" component={MiClan} />
         <Route component={NotFound} />
       </Switch>
-    </Layout>
-  );
+      </Layout>
+    );
 }
 
 function App() {
