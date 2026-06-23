@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Swords, Trophy, Target, CalendarDays, Search, Shield, Settings } from "lucide-react";
+import { Swords, Trophy, Target, CalendarDays, Search, Shield, Settings, Globe } from "lucide-react";
 import { useTheme } from "@/context/theme";
 import { useLang } from "@/context/lang";
 
@@ -14,8 +14,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/clasificatorio", label: t("nav_qualifier"),  icon: Target },
     { href: "/torneos",      label: t("nav_tournaments"),  icon: CalendarDays },
     { href: "/equipo",       label: t("nav_team_search"),  icon: Search },
-    { href: "/mi-clan",      label: t("nav_mi_clan"),      icon: Shield },
-    { href: "/configuracion",label: t("nav_config"),       icon: Settings },
+    { href: "/mi-clan",        label: t("nav_mi_clan"),      icon: Shield },
+    { href: "/paises",         label: "Top Países",          icon: Globe },
+    { href: "/configuracion",  label: t("nav_config"),       icon: Settings },
   ];
 
   return (

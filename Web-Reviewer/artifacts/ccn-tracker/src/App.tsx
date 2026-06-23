@@ -11,6 +11,7 @@ import Tournaments from "@/pages/tournaments";
 import TeamSearch from "@/pages/team-search";
 import MiClan from "@/pages/mi-clan";
 import Settings from "@/pages/settings";
+import Paises from "@/pages/paises";
 import { ThemeProvider } from "@/context/theme";
 import { LangProvider } from "@/context/lang";
 import { useEffect } from "react";
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/torneos" component={Tournaments} />
         <Route path="/equipo" component={TeamSearch} />
         <Route path="/mi-clan" component={MiClan} />
+        <Route path="/paises" component={Paises} />
         <Route path="/configuracion" component={Settings} />
         <Route component={NotFound} />
       </Switch>

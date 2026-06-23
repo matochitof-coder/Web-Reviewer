@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getClanTag } from "./settings";
-import { Link } from "wouter";
-import { Settings, X, ChevronUp, ChevronDown, Minus, Shield, Swords, Trophy, Heart, Star, Building2 } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Minus, Shield, Swords, Trophy, Heart, Star, Building2, Edit2, Check } from "lucide-react";
 import WarTab, { WarLogTab } from "./mi-clan-war";
 import CWLTab from "./mi-clan-cwl";
 import CapitalTab from "./mi-clan-capital";
@@ -197,6 +196,9 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "clan",      label: "INFO",      icon: <Shield className="w-3.5 h-3.5" /> },
 ];
 
+const STORAGE_KEY = "ccn_clan_tag";
+const DEFAULT_CLAN_TAG = "L0JVQGYR";
+
 export default function MiClan() {
   const [members, setMembers] = useState<Member[]>([]);
   const [clan, setClan] = useState<ClanInfo | null>(null);
@@ -206,11 +208,14 @@ export default function MiClan() {
   const [tab, setTab] = useState<Tab>("ranking");
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [selectedPlayer, setSelectedPlayer] = useState<{ tag: string; name: string } | null>(null);
+  const [editingTag, setEditingTag] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [savingTag, setSavingTag] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const tag = getClanTag();
+  function loadClan(tag: string) {
     setClanTag(tag);
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setClan(null); setMembers([]);
     Promise.all([
       fetch(`/api/clan/${tag}`).then((r) => r.json() as Promise<ClanInfo & { error?: string }>),
       fetch(`/api/clan/${tag}/members`).then((r) => r.json() as Promise<{ members: Member[]; error?: string }>),
@@ -222,7 +227,40 @@ export default function MiClan() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    const tag = getClanTag();
+    loadClan(tag);
   }, []);
+
+  function handleEditTag() {
+    setTagInput(clanTag);
+    setEditingTag(true);
+    setTimeout(() => tagInputRef.current?.focus(), 50);
+  }
+
+  async function handleSaveTag() {
+    const tag = tagInput.trim().replace(/^#/, "").toUpperCase();
+    if (!tag) return;
+    setSavingTag(true);
+    try {
+      const res = await fetch(`/api/clan/${tag}`);
+      if (!res.ok) throw new Error("Clan no encontrado");
+      localStorage.setItem(STORAGE_KEY, tag);
+      setEditingTag(false);
+      loadClan(tag);
+    } catch (err) {
+      alert(String((err as Error).message ?? err));
+    } finally {
+      setSavingTag(false);
+    }
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") void handleSaveTag();
+    if (e.key === "Escape") setEditingTag(false);
+  }
 
   const sorted = useCallback((key: SortKey): Member[] =>
     [...members].sort((a, b) => {
@@ -239,16 +277,48 @@ export default function MiClan() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold uppercase tracking-wider">Mi Clan</h1>
-          {clanTag && <p className="text-xs text-muted-foreground font-mono mt-0.5">#{clanTag}</p>}
         </div>
-        <Link href="/configuracion">
-          <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/50 hover:border-border px-3 py-1.5 rounded-md transition-all">
-            <Settings className="w-3.5 h-3.5" /> Cambiar clan
+        {editingTag ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border border-primary/40 rounded-md bg-background overflow-hidden focus-within:border-primary/70 transition-colors">
+              <span className="px-2 text-muted-foreground font-mono text-xs select-none">#</span>
+              <input
+                ref={tagInputRef}
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value.replace(/^#/, "").toUpperCase())}
+                onKeyDown={handleTagKeyDown}
+                className="bg-transparent py-1.5 pr-2 text-sm font-mono outline-none w-32 placeholder:text-muted-foreground/40"
+                placeholder={DEFAULT_CLAN_TAG}
+                spellCheck={false}
+              />
+            </div>
+            <button
+              onClick={() => void handleSaveTag()}
+              disabled={savingTag || !tagInput.trim()}
+              className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-semibold disabled:opacity-40 transition-all"
+            >
+              <Check className="w-3.5 h-3.5" /> {savingTag ? "..." : "OK"}
+            </button>
+            <button
+              onClick={() => setEditingTag(false)}
+              className="p-1.5 rounded-md border border-border/50 text-muted-foreground hover:text-foreground transition-all"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleEditTag}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/50 hover:border-border px-3 py-1.5 rounded-md transition-all"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            {clanTag ? `#${clanTag}` : "Cambiar clan"}
           </button>
-        </Link>
+        )}
       </div>
 
       {loading && <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-14 rounded-lg bg-card/50 border border-border/30 animate-pulse" />)}</div>}
@@ -258,7 +328,7 @@ export default function MiClan() {
           <p className="text-red-400 font-semibold text-sm">No se pudo cargar el clan</p>
           <p className="text-red-400/70 text-xs font-mono">{error}</p>
           <p className="text-muted-foreground text-xs">
-            Ve a <Link href="/configuracion" className="text-primary hover:underline">Configuración</Link> → "Abrir diagnóstico del API".
+            Verifica tu tag de clan o usa el botón "Abrir diagnóstico del API" en Configuración.
           </p>
         </div>
       )}
