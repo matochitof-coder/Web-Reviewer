@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "CCN War Tracker"
+version = "1.0.0"
+id = "artifacts/ccn-tracker"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22389
+
+[services.development]
+run = "pnpm --filter @workspace/ccn-tracker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ccn-tracker", "run", "build" ]
+publicDir = "artifacts/ccn-tracker/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22389"
+BASE_PATH = "/"

@@ -1,0 +1,1 @@
+- [CCN API endpoints](ccn-api.md) — CCN uses a mix of JSON API (with Bearer token) and server-rendered HTML scraping for different data sources.
