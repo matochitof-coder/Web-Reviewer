@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Swords, Trophy, Target, CalendarDays, Search } from "lucide-react";
+import { Swords, Trophy, Target, CalendarDays, Search, Shield, Settings } from "lucide-react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -10,7 +10,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/clasificatorio", label: "QUALIFIER", icon: Target },
     { href: "/torneos", label: "TOURNAMENTS", icon: CalendarDays },
     { href: "/equipo", label: "TEAM SEARCH", icon: Search },
-    { href: "/mi-clan", label: "MI CLAN", icon: Swords },
+    { href: "/mi-clan", label: "MI CLAN", icon: Shield },
+    { href: "/configuracion", label: "CONFIG", icon: Settings },
   ];
 
   return (

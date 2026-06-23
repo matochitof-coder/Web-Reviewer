@@ -10,6 +10,7 @@ import Qualifier from "@/pages/qualifier";
 import Tournaments from "@/pages/tournaments";
 import TeamSearch from "@/pages/team-search";
 import MiClan from "@/pages/mi-clan";
+import Settings from "@/pages/settings";
 import { useEffect } from "react";
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/torneos" component={Tournaments} />
         <Route path="/equipo" component={TeamSearch} />
         <Route path="/mi-clan" component={MiClan} />
+        <Route path="/configuracion" component={Settings} />
         <Route component={NotFound} />
       </Switch>
       </Layout>
