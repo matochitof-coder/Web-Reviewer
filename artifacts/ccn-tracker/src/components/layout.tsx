@@ -1,17 +1,21 @@
 import { Link, useLocation } from "wouter";
 import { Swords, Trophy, Target, CalendarDays, Search, Shield, Settings } from "lucide-react";
+import { useTheme } from "@/context/theme";
+import { useLang } from "@/context/lang";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { appName } = useTheme();
+  const { lang, setLang, t } = useLang();
 
   const navItems = [
-    { href: "/", label: "LIVE WARS", icon: Swords },
-    { href: "/ranking", label: "ELO RANKING", icon: Trophy },
-    { href: "/clasificatorio", label: "QUALIFIER", icon: Target },
-    { href: "/torneos", label: "TOURNAMENTS", icon: CalendarDays },
-    { href: "/equipo", label: "TEAM SEARCH", icon: Search },
-    { href: "/mi-clan", label: "MI CLAN", icon: Shield },
-    { href: "/configuracion", label: "CONFIG", icon: Settings },
+    { href: "/",             label: t("nav_live_wars"),    icon: Swords },
+    { href: "/ranking",      label: t("nav_ranking"),      icon: Trophy },
+    { href: "/clasificatorio", label: t("nav_qualifier"),  icon: Target },
+    { href: "/torneos",      label: t("nav_tournaments"),  icon: CalendarDays },
+    { href: "/equipo",       label: t("nav_team_search"),  icon: Search },
+    { href: "/mi-clan",      label: t("nav_mi_clan"),      icon: Shield },
+    { href: "/configuracion",label: t("nav_config"),       icon: Settings },
   ];
 
   return (
@@ -22,8 +26,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center border border-primary/20">
             <Swords className="w-5 h-5 text-primary" />
           </div>
-          <span className="font-display font-bold text-xl tracking-wider uppercase">CCN Tracker</span>
+          <span className="font-display font-bold text-xl tracking-wider uppercase">{appName} Tracker</span>
         </div>
+        {/* Language toggle mobile */}
+        <button
+          onClick={() => setLang(lang === "es" ? "en" : "es")}
+          className="text-lg leading-none px-2 py-1 rounded border border-border/40 hover:border-border transition-colors"
+          title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
+        >
+          {lang === "es" ? "🇪🇸" : "🇬🇧"}
+        </button>
       </div>
 
       {/* Sidebar */}
@@ -32,39 +44,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(0,210,255,0.1)]">
             <Swords className="w-6 h-6 text-primary" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-2xl leading-none tracking-wider text-primary shadow-primary">CCN</span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-display font-bold text-2xl leading-none tracking-wider text-primary truncate">{appName}</span>
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">War Tracker</span>
           </div>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-2">
+        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
             return (
-              <Link 
-                key={item.href} 
-                href={item.href}
+              <Link
+                key={item.href} href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 group relative overflow-hidden ${
-                  isActive 
-                    ? "bg-primary/10 text-primary border border-primary/20" 
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/20"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
                 }`}
-                data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
               >
-                {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(0,210,255,0.5)]" />
-                )}
-                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                <span className="font-display font-semibold tracking-wider text-sm">{item.label}</span>
+                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(0,210,255,0.5)]" />}
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                <span className="font-display font-semibold tracking-wider text-sm truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border/50 text-xs text-muted-foreground font-mono text-center opacity-50">
-          SYSTEM.ONLINE // V.1.0.0
+        <div className="p-4 border-t border-border/50 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-mono opacity-50">{t("nav_footer")}</span>
+          <button
+            onClick={() => setLang(lang === "es" ? "en" : "es")}
+            className="text-base leading-none px-2 py-1 rounded border border-border/40 hover:border-border transition-colors opacity-70 hover:opacity-100"
+            title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
+          >
+            {lang === "es" ? "🇪🇸" : "🇬🇧"}
+          </button>
         </div>
       </aside>
 
@@ -77,12 +92,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               const Icon = item.icon;
               const isActive = location === item.href;
               return (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
+                <Link
+                  key={item.href} href={item.href}
                   className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 text-xs font-display font-semibold tracking-wider ${
-                    isActive 
-                      ? "bg-primary/15 text-primary border border-primary/30" 
+                    isActive
+                      ? "bg-primary/15 text-primary border border-primary/30"
                       : "bg-secondary text-muted-foreground border border-transparent"
                   }`}
                 >

@@ -11,12 +11,15 @@ import Tournaments from "@/pages/tournaments";
 import TeamSearch from "@/pages/team-search";
 import MiClan from "@/pages/mi-clan";
 import Settings from "@/pages/settings";
+import { ThemeProvider } from "@/context/theme";
+import { LangProvider } from "@/context/lang";
 import { useEffect } from "react";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
     },
   },
 });
@@ -34,25 +37,28 @@ function Router() {
         <Route path="/configuracion" component={Settings} />
         <Route component={NotFound} />
       </Switch>
-      </Layout>
-    );
+    </Layout>
+  );
 }
 
 function App() {
   useEffect(() => {
-    // Force dark mode
     document.documentElement.classList.add("dark");
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <LangProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LangProvider>
+    </ThemeProvider>
   );
 }
 
