@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
 import Home from "@/pages/home";
+import Matches from "@/pages/matches";
 import Ranking from "@/pages/ranking";
 import Qualifier from "@/pages/qualifier";
 import Tournaments from "@/pages/tournaments";
@@ -30,6 +31,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/matches" component={Matches} />
         <Route path="/ranking" component={Ranking} />
         <Route path="/clasificatorio" component={Qualifier} />
         <Route path="/torneos" component={Tournaments} />
