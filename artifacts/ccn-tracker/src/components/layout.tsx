@@ -32,10 +32,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <button
           onClick={() => setLang(lang === "es" ? "en" : "es")}
-          className="text-lg leading-none px-2 py-1 rounded border border-border/40 hover:border-border transition-colors"
+          className="flex items-center gap-1.5 text-sm leading-none px-3 py-2 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-semibold transition-colors"
           title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
         >
-          {lang === "es" ? "🇪🇸" : "🇬🇧"}
+          {lang === "es" ? "🇪🇸 ES" : "🇬🇧 EN"}
         </button>
       </div>
 
@@ -51,7 +51,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
+        {/* Language Switcher — prominent, always visible */}
+        <div className="px-4 pt-4 pb-2">
+          <button
+            onClick={() => setLang(lang === "es" ? "en" : "es")}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-primary/25 bg-primary/8 hover:bg-primary/15 transition-all group"
+            title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              <span className="text-xs font-display font-bold tracking-wider text-primary uppercase">
+                {lang === "es" ? "Idioma" : "Language"}
+              </span>
+            </div>
+            <span className="text-sm font-semibold text-foreground">
+              {lang === "es" ? "🇪🇸 Español" : "🇬🇧 English"}
+            </span>
+          </button>
+        </div>
+
+        <nav className="flex-1 py-3 px-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
@@ -78,15 +97,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border/50 flex items-center justify-between">
+        <div className="p-4 border-t border-border/50">
           <span className="text-xs text-muted-foreground font-mono opacity-50">{t("nav_footer")}</span>
-          <button
-            onClick={() => setLang(lang === "es" ? "en" : "es")}
-            className="text-base leading-none px-2 py-1 rounded border border-border/40 hover:border-border transition-colors opacity-70 hover:opacity-100"
-            title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
-          >
-            {lang === "es" ? "🇪🇸" : "🇬🇧"}
-          </button>
         </div>
       </aside>
 
