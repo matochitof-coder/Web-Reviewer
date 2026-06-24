@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Globe, Trophy, Shield, RefreshCw, ChevronUp, Swords } from "lucide-react";
+import { Globe, RefreshCw, ChevronUp, Swords } from "lucide-react";
+import ClanModal from "@/components/clan-modal";
 
 type GlobalPlayer = {
   rank: number; tag: string; name: string; level: number;
@@ -25,9 +26,9 @@ function FlagEmoji({ code }: { code: string | null }) {
 }
 
 function MedalRank({ rank }: { rank: number }) {
-  if (rank === 1) return <span className="text-yellow-400 font-mono font-bold text-sm">🥇</span>;
-  if (rank === 2) return <span className="text-slate-300 font-mono font-bold text-sm">🥈</span>;
-  if (rank === 3) return <span className="text-amber-600 font-mono font-bold text-sm">🥉</span>;
+  if (rank === 1) return <span className="font-mono font-bold text-sm">🥇</span>;
+  if (rank === 2) return <span className="font-mono font-bold text-sm">🥈</span>;
+  if (rank === 3) return <span className="font-mono font-bold text-sm">🥉</span>;
   return <span className="w-7 text-center font-mono text-xs text-muted-foreground tabular-nums">{rank}</span>;
 }
 
@@ -54,7 +55,7 @@ function PlayerRow({ p }: { p: GlobalPlayer }) {
       </div>
       <div className="text-right shrink-0">
         <p className="font-bold text-sm tabular-nums">🏆 {p.trophies.toLocaleString()}</p>
-        {(p.attackWins != null) && (
+        {p.attackWins != null && (
           <p className="text-[10px] text-muted-foreground">⚔️{p.attackWins} 🛡️{p.defenseWins ?? 0}</p>
         )}
       </div>
@@ -62,13 +63,16 @@ function PlayerRow({ p }: { p: GlobalPlayer }) {
   );
 }
 
-function ClanRow({ c }: { c: GlobalClan }) {
+function ClanRow({ c, onTap }: { c: GlobalClan; onTap: () => void }) {
   return (
-    <div className="flex items-center gap-3 border border-border/40 rounded-lg px-3 py-2.5 bg-card/50 hover:bg-card/80 transition-all">
+    <button
+      onClick={onTap}
+      className="w-full flex items-center gap-3 border border-border/40 rounded-lg px-3 py-2.5 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all text-left group"
+    >
       <div className="w-7 flex justify-center shrink-0"><MedalRank rank={c.rank} /></div>
       {c.badgeUrl && <img src={c.badgeUrl} alt="" className="w-9 h-9 shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{c.name}</p>
+        <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
         <p className="text-[10px] text-muted-foreground">Nv.{c.level} · {c.members}/50 miembros</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -78,7 +82,8 @@ function ClanRow({ c }: { c: GlobalClan }) {
           {c.locationName && <p className="text-[10px] text-muted-foreground hidden sm:block">{c.locationName}</p>}
         </div>
       </div>
-    </div>
+      <span className="text-primary/40 group-hover:text-primary/70 text-xs ml-1 shrink-0">›</span>
+    </button>
   );
 }
 
@@ -101,6 +106,7 @@ export default function Mundial() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [selectedClan, setSelectedClan] = useState<{ tag: string; name: string; badgeUrl: string | null } | null>(null);
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
@@ -144,18 +150,14 @@ export default function Mundial() {
 
   useEffect(() => { void fetchData(tab); }, [tab]);
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; count: number }[] = [
-    { id: "jugadores", label: "Top Jugadores", icon: "🏆", count: players.length },
-    { id: "clanes",    label: "Top Clanes",    icon: "🛡️", count: clans.length },
-    { id: "builder",   label: "Builder Base",  icon: "🔨", count: bbPlayers.length },
+  const tabs = [
+    { id: "jugadores" as Tab, label: "Top Jugadores", icon: "🏆" },
+    { id: "clanes"    as Tab, label: "Top Clanes",    icon: "🛡️" },
+    { id: "builder"   as Tab, label: "Builder Base",  icon: "🔨" },
   ];
-
-  const currentData = tab === "jugadores" ? players : tab === "builder" ? bbPlayers : null;
-  const currentClans = tab === "clanes" ? clans : null;
 
   return (
     <div className="space-y-6 pb-16 animate-in fade-in duration-500">
-      {/* Header */}
       <div className="space-y-1">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground tracking-wider uppercase flex items-center gap-3">
           <Globe className="w-8 h-8 md:w-12 md:h-12 text-primary" /> Top 200 Mundial
@@ -165,7 +167,6 @@ export default function Mundial() {
         </p>
       </div>
 
-      {/* Stats strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Jugadores", value: "200", icon: "👤", sub: "Home Village" },
@@ -181,54 +182,35 @@ export default function Mundial() {
         ))}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-secondary/40 p-1 rounded-xl border border-border/30">
         {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+          <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg text-xs font-display font-semibold tracking-wider transition-all ${
-              tab === t.id
-                ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              tab === t.id ? "bg-primary/20 text-primary border border-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <span>{t.icon}</span>
             <span className="hidden sm:inline">{t.label}</span>
-            {t.count > 0 && (
-              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${tab === t.id ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"}`}>
-                {t.count}
-              </span>
-            )}
           </button>
         ))}
       </div>
 
-      {/* Header bar */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display font-bold uppercase tracking-wider text-base">
             {tab === "jugadores" && "🏆 Top 200 Jugadores · Trofeos"}
-            {tab === "clanes" && "🛡️ Top 200 Clanes · Trofeos"}
+            {tab === "clanes" && "🛡️ Top 200 Clanes · Toca un clan para ver detalles"}
             {tab === "builder" && "🔨 Top 200 Builder Base"}
           </h2>
-          {lastUpdated && (
-            <p className="text-[10px] text-muted-foreground font-mono">
-              {lastUpdated.toLocaleTimeString("es")}
-            </p>
-          )}
+          {lastUpdated && <p className="text-[10px] text-muted-foreground font-mono">{lastUpdated.toLocaleTimeString("es")}</p>}
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
+        <button onClick={handleRefresh} disabled={loading}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/50 hover:border-border px-3 py-1.5 rounded-md transition-all disabled:opacity-40"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Actualizar
         </button>
       </div>
 
-      {/* Content */}
       {loading && <RowSkeleton count={15} />}
 
       {error && !loading && (
@@ -239,44 +221,47 @@ export default function Mundial() {
         </div>
       )}
 
-      {!loading && !error && currentData && currentData.length > 0 && (
-        <div className="space-y-1.5">
-          {currentData.map((p) => <PlayerRow key={p.tag} p={p} />)}
-        </div>
-      )}
+      {!loading && !error && (tab === "jugadores" || tab === "builder") && (tab === "jugadores" ? players : bbPlayers).map((p) => (
+        <PlayerRow key={p.tag} p={p} />
+      ))}
 
-      {!loading && !error && currentClans && currentClans.length > 0 && (
-        <div className="space-y-1.5">
-          {currentClans.map((c) => <ClanRow key={c.tag} c={c} />)}
-        </div>
-      )}
+      {!loading && !error && tab === "clanes" && clans.map((c) => (
+        <ClanRow key={c.tag} c={c} onTap={() => setSelectedClan({ tag: c.tag, name: c.name, badgeUrl: c.badgeUrl })} />
+      ))}
 
-      {!loading && !error && (currentData?.length === 0 || currentClans?.length === 0) && (
+      {!loading && !error && (
+        (tab === "jugadores" && players.length === 0) ||
+        (tab === "clanes" && clans.length === 0) ||
+        (tab === "builder" && bbPlayers.length === 0)
+      ) && (
         <div className="flex flex-col items-center gap-3 py-16">
           <Globe className="w-12 h-12 text-muted-foreground/20" />
           <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Sin datos</p>
         </div>
       )}
 
-      {/* Warreport note */}
       <div className="border border-border/30 rounded-xl bg-card/30 p-4 flex items-start gap-3">
         <Swords className="w-4 h-4 text-primary/60 shrink-0 mt-0.5" />
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p className="font-semibold text-foreground/80">Fuente de datos</p>
-          <p>Datos oficiales de la API de Clash of Clans · Actualizados cada 10 minutos por Supercell</p>
-          <p>Para tracking de guerras CCN ve a <strong>Matches</strong> · Para stats de tu clan usa <strong>Mi Clan</strong></p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Datos oficiales de la API de Clash of Clans · Actualizados por Supercell ·
+          <strong className="text-foreground/80"> Toca un clan</strong> para ver sus miembros y estadísticas
+        </p>
       </div>
 
-      {/* Scroll to top */}
       {showScrollTop && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className="fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all"
         >
           <ChevronUp className="w-5 h-5" />
         </button>
       )}
+
+      <ClanModal
+        clanTag={selectedClan?.tag ?? null}
+        clanName={selectedClan?.name}
+        clanBadgeUrl={selectedClan?.badgeUrl}
+        onClose={() => setSelectedClan(null)}
+      />
     </div>
   );
 }
