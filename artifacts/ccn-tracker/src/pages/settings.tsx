@@ -7,6 +7,15 @@ export const STORAGE_KEY = "ccn_clan_tag";
 const ACCESS_CODE = "SHOOZARD";
 const SESSION_KEY = "ccn_settings_unlocked";
 
+// Migration: erase the old hardcoded default clan so the page opens clean
+const OLD_DEFAULTS = ["L0JVQGYR", "l0jvqgyr"];
+(function clearOldDefault() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored && OLD_DEFAULTS.includes(stored.toUpperCase())) {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+})();
+
 export function getClanTag(): string {
   return localStorage.getItem(STORAGE_KEY) ?? "";
 }
