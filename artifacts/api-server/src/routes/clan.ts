@@ -409,4 +409,51 @@ router.get("/player/:tag", async (req, res) => {
   } catch (err) { req.log.error({ err }, "Error fetching player"); res.status(502).json({ error: String(err) }); }
 });
 
+// ─── Locations / Top por país ─────────────────────────────────────────────────
+
+router.get("/paises", async (req, res) => {
+  try {
+    const data = (await cocApiGet("/locations?limit=200")) as {
+      items?: Array<{ id: number; name: string; isCountry: boolean; countryCode?: string }>;
+    };
+    const countries = (data.items ?? [])
+      .filter((l) => l.isCountry)
+      .map((l) => ({ id: l.id, name: l.name, countryCode: l.countryCode ?? null }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ countries });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching locations");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
+router.get("/paises/:locationId/jugadores", async (req, res) => {
+  const { locationId } = req.params;
+  try {
+    const data = (await cocApiGet(`/locations/${locationId}/rankings/players?limit=10`)) as {
+      items?: Array<{
+        tag: string; name: string; expLevel: number; trophies: number;
+        attackWins: number; defenseWins: number;
+        league?: { name: string; iconUrls?: { small?: string } };
+        clan?: { name: string; tag: string; badgeUrls?: { small?: string } };
+        rank?: number;
+      }>;
+    };
+    const players = (data.items ?? []).map((p, i) => ({
+      rank: (p.rank ?? i + 1),
+      tag: p.tag, name: p.name, level: p.expLevel,
+      trophies: p.trophies, attackWins: p.attackWins, defenseWins: p.defenseWins,
+      leagueName: p.league?.name ?? null,
+      leagueIconUrl: p.league?.iconUrls?.small ?? null,
+      clanName: p.clan?.name ?? null,
+      clanTag: p.clan?.tag ?? null,
+      clanBadgeUrl: p.clan?.badgeUrls?.small ?? null,
+    }));
+    res.json({ players });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching top players for location");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
 export default router;
