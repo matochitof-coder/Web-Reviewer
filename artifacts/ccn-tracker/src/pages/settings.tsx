@@ -3,13 +3,12 @@ import { Shield, Save, RotateCcw, CheckCircle, Palette, Type, Globe, Lock, Bell,
 import { useTheme, COLOR_THEMES, FONT_PRESETS } from "@/context/theme";
 import { useLang, type Lang } from "@/context/lang";
 
-const DEFAULT_CLAN_TAG = "L0JVQGYR";
-const STORAGE_KEY = "ccn_clan_tag";
-const ACCESS_CODE = "ZHOOZARD";
+export const STORAGE_KEY = "ccn_clan_tag";
+const ACCESS_CODE = "SHOOZARD";
 const SESSION_KEY = "ccn_settings_unlocked";
 
 export function getClanTag(): string {
-  return localStorage.getItem(STORAGE_KEY) ?? DEFAULT_CLAN_TAG;
+  return localStorage.getItem(STORAGE_KEY) ?? "";
 }
 
 type Tab = "clan" | "look" | "lang" | "avanzado" | "notificaciones";
@@ -121,7 +120,7 @@ export default function Settings() {
 
   function handleClanReset() {
     localStorage.removeItem(STORAGE_KEY);
-    setClanTag(DEFAULT_CLAN_TAG);
+    setClanTag("");
     setPreview(null);
     setCheckError(null);
   }
@@ -218,7 +217,7 @@ export default function Settings() {
                   id="clan-tag" type="text" value={clanTag}
                   onChange={(e) => { setClanTag(e.target.value.replace(/^#/, "").toUpperCase()); setPreview(null); setCheckError(null); }}
                   className="flex-1 bg-transparent py-2.5 pr-3 text-sm font-mono outline-none placeholder:text-muted-foreground/40"
-                  spellCheck={false} autoComplete="off" placeholder={DEFAULT_CLAN_TAG}
+                  spellCheck={false} autoComplete="off" placeholder="TAG DEL CLAN"
                 />
               </div>
               <button
@@ -456,8 +455,8 @@ export default function Settings() {
             </h2>
             <p className="text-xs text-muted-foreground">Estas acciones son irreversibles. Procede con cuidado.</p>
             <button onClick={handleResetAll}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-md border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 transition-all">
-              <Trash2 className="w-4 h-4" /> Restablecer configuración completa
+              className="flex items-center gap-2 px-4 py-2.5 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-sm hover:bg-red-500/20 transition-all">
+              <Trash2 className="w-4 h-4" /> Resetear toda la configuración
             </button>
           </div>
         </div>
