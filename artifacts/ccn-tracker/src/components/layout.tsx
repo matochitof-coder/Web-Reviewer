@@ -18,6 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/mi-clan",        label: t("nav_mi_clan"),      icon: Shield },
     { href: "/paises",         label: "Top Países",          icon: Globe },
     { href: "/mundial",        label: "Top 200 Mundial",     icon: Trophy },
+    { href: "/armys",          label: "Armys Populares",     icon: Swords },
     { href: "/configuracion",  label: t("nav_config"),       icon: Settings },
   ];
 
@@ -52,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Language Switcher — prominent, always visible */}
+        {/* Language Switcher */}
         <div className="px-4 pt-4 pb-2">
           <button
             onClick={() => setLang(lang === "es" ? "en" : "es")}
@@ -88,9 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(0,210,255,0.5)]" />}
                 <div className="relative shrink-0">
                   <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-                  {isLive && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  )}
+                  {isLive && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-pulse" />}
                 </div>
                 <span className="font-display font-semibold tracking-wider text-sm truncate">{item.label}</span>
               </Link>
@@ -113,8 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               const isActive = location === item.href;
               const isLive = item.href === "/";
               return (
-                <Link
-                  key={item.href} href={item.href}
+                <Link key={item.href} href={item.href}
                   className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 text-xs font-display font-semibold tracking-wider ${
                     isActive
                       ? "bg-primary/15 text-primary border border-primary/30"
