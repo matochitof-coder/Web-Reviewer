@@ -354,6 +354,58 @@ router.get("/ccn/equipo/:id/partidas", async (req, res) => {
   }
 });
 
+router.get("/ccn/equipo/:id/info", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [eloData, html] = await Promise.all([
+      ccnApiGet("/api/elo-rank") as Promise<EloRankEntry[]>,
+      ccnHtmlGet(`/teams/${id}`),
+    ]);
+
+    const teamEntry = (Array.isArray(eloData) ? eloData : []).find(e => String(e.team_id) === id);
+    const matches = parseMatchRows(html);
+
+    const roster: Array<{ name: string; tag?: string }> = [];
+    const seen = new Set<string>();
+
+    const playerLinkPattern = /href="\/players\/[^"]*"[^>]*>\s*<[^>]+>\s*([\w\s\-_.#]+)<\/[^>]+>/g;
+    let pm;
+    while ((pm = playerLinkPattern.exec(html)) !== null) {
+      const name = pm[1].trim();
+      if (name && name.length > 1 && !seen.has(name)) {
+        seen.add(name);
+        roster.push({ name });
+      }
+    }
+
+    if (roster.length === 0) {
+      const altPattern = /href="\/players\/[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+      while ((pm = altPattern.exec(html)) !== null) {
+        const name = stripTags(pm[1]).trim();
+        if (name && name.length > 1 && name.length < 40 && !seen.has(name)) {
+          seen.add(name);
+          roster.push({ name });
+        }
+      }
+    }
+
+    res.json({
+      teamId: id,
+      teamName: teamEntry?.team.team_name ?? `Team ${id}`,
+      elo: teamEntry?.elo_points ?? null,
+      eloRank: teamEntry?.elo_rank ?? null,
+      badgeUrl: teamEntry?.team.has_image ? `${CCN_BASE}/static/teams/t-${id}-sized.png` : null,
+      twitter: teamEntry?.team.twitter ?? null,
+      profileUrl: teamEntry?.team.profileurl ?? `${CCN_BASE}/teams/${id}`,
+      roster: roster.slice(0, 15),
+      recentMatches: matches.slice(0, 10),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching team info");
+    res.status(502).json({ error: "Could not fetch team info" });
+  }
+});
+
 router.get("/ccn/equipo/:id/ultimo-partido", async (req, res) => {
   const { id } = req.params;
   try {
