@@ -17,6 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/equipo",         label: t("nav_team_search"),  icon: Search },
     { href: "/mi-clan",        label: t("nav_mi_clan"),      icon: Shield },
     { href: "/paises",         label: "Top Países",          icon: Globe },
+    { href: "/mundial",        label: "Top 200 Mundial",     icon: Trophy },
     { href: "/configuracion",  label: t("nav_config"),       icon: Settings },
   ];
 
