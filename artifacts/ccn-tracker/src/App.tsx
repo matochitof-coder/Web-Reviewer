@@ -14,6 +14,7 @@ import MiClan from "@/pages/mi-clan";
 import Settings from "@/pages/settings";
 import Paises from "@/pages/paises";
 import Mundial from "@/pages/mundial";
+import Armys from "@/pages/armys";
 import { ThemeProvider } from "@/context/theme";
 import { LangProvider } from "@/context/lang";
 import { useEffect } from "react";
@@ -40,6 +41,7 @@ function Router() {
         <Route path="/mi-clan" component={MiClan} />
         <Route path="/paises" component={Paises} />
         <Route path="/mundial" component={Mundial} />
+        <Route path="/armys" component={Armys} />
         <Route path="/configuracion" component={Settings} />
         <Route component={NotFound} />
       </Switch>
