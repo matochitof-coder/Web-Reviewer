@@ -3,7 +3,7 @@ import { useGetCcnGuerras, getGetCcnGuerrasQueryKey } from "@workspace/api-clien
 import { CcnGuerraItem } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LiveWarModal } from "@/components/live-war-modal";
-import { Calendar, Clock, ChevronDown, ChevronUp, Swords, Trophy, Flag } from "lucide-react";
+import { Calendar, Clock, ChevronDown, ChevronUp, Swords, Flag, Sun, Sunrise } from "lucide-react";
 
 function WarListSkeleton() {
   return (
@@ -116,14 +116,17 @@ function MatchRow({ war, onClick }: { war: CcnGuerraItem; onClick: () => void })
   );
 }
 
-function SectionHeader({ title, count, icon, accent = false }: {
-  title: string; count: number; icon: React.ReactNode; accent?: boolean;
+function DaySectionHeader({
+  title, count, icon, accentClass, borderClass, badgeClass,
+}: {
+  title: string; count: number; icon: React.ReactNode;
+  accentClass: string; borderClass: string; badgeClass: string;
 }) {
   return (
-    <div className={`flex items-center gap-3 pb-2 border-b ${accent ? "border-primary/30" : "border-border/40"}`}>
+    <div className={`flex items-center gap-3 pb-3 border-b-2 ${borderClass}`}>
       <span>{icon}</span>
-      <h2 className={`font-display font-bold tracking-widest uppercase ${accent ? "text-primary text-xl" : "text-foreground/70 text-lg"}`}>{title}</h2>
-      <span className={`text-xs font-mono px-2 py-0.5 rounded-full border ${accent ? "text-primary border-primary/30 bg-primary/10" : "text-muted-foreground border-border/30 bg-secondary/30"}`}>{count}</span>
+      <h2 className={`font-display font-bold tracking-widest uppercase text-xl ${accentClass}`}>{title}</h2>
+      <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${badgeClass}`}>{count} partidas</span>
     </div>
   );
 }
@@ -132,29 +135,25 @@ export default function Matches() {
   const [selectedWar, setSelectedWar] = useState<CcnGuerraItem | null>(null);
   const [showTerminadas, setShowTerminadas] = useState(false);
 
-  const { data: todayWars = [], isLoading: loadingToday } = useGetCcnGuerras(
+  // offset=0 returns ALL upcoming matches — we filter today/tomorrow client-side
+  // using El Salvador timezone so no matches are missed due to UTC offsets
+  const { data: allWars = [], isLoading } = useGetCcnGuerras(
     { offset: 0 },
     { query: { queryKey: getGetCcnGuerrasQueryKey({ offset: 0 }), refetchInterval: 60_000 } }
   );
 
-  const { data: tomorrowWars = [], isLoading: loadingTomorrow } = useGetCcnGuerras(
-    { offset: 1 },
-    { query: { queryKey: getGetCcnGuerrasQueryKey({ offset: 1 }), refetchInterval: 120_000 } }
-  );
-
-  const todayList = (todayWars as CcnGuerraItem[]).filter(isWarToday);
-  const tomorrowList = (tomorrowWars as CcnGuerraItem[]).filter(isWarTomorrow);
+  const warList = allWars as CcnGuerraItem[];
+  const todayList = warList.filter(isWarToday);
+  const tomorrowList = warList.filter(isWarTomorrow);
 
   const s = (w: CcnGuerraItem) => w.status.toLowerCase();
   const isLiveStatus = (w: CcnGuerraItem) => s(w) === "inprogress" || s(w) === "live" || s(w) === "en progreso";
   const isFinishedStatus = (w: CcnGuerraItem) => s(w) === "finished" || s(w) === "finalizada" || s(w) === "completed";
 
   const liveWars = todayList.filter(isLiveStatus);
-
   const upcomingWars = todayList.filter(
     (w) => !isLiveStatus(w) && !isFinishedStatus(w) && !isWarPast(w)
   );
-
   const terminadasHoy = todayList.filter(
     (w) => isFinishedStatus(w) || (isWarPast(w) && !isLiveStatus(w))
   );
@@ -172,94 +171,115 @@ export default function Matches() {
         </p>
       </div>
 
-      {loadingToday ? (
+      {isLoading ? (
         <WarListSkeleton />
       ) : (
-        <div className="space-y-8">
-          {liveWars.length > 0 && (
-            <section className="space-y-3">
-              <SectionHeader
-                title="En Vivo Ahora"
-                count={liveWars.length}
-                icon={<div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(0,210,255,0.6)]" />}
-                accent
-              />
-              <div className="space-y-2">
-                {liveWars.map((w) => (
+        <div className="space-y-10">
+
+          {/* ── HOY ── */}
+          <div className="space-y-5">
+            <DaySectionHeader
+              title="Hoy"
+              count={todayList.length}
+              icon={<Sun className="w-5 h-5 text-amber-400" />}
+              accentClass="text-amber-400"
+              borderClass="border-amber-400/40"
+              badgeClass="text-amber-400 border-amber-400/30 bg-amber-400/10"
+            />
+
+            {todayList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 border border-dashed border-border/40 rounded-2xl bg-card/20 space-y-3">
+                <Calendar className="w-10 h-10 text-muted-foreground/30" />
+                <p className="font-mono text-muted-foreground text-sm uppercase tracking-widest">No hay partidas para hoy</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {liveWars.length > 0 && (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(0,210,255,0.6)]" />
+                      <span className="font-display font-bold tracking-widest uppercase text-primary text-sm">En Vivo Ahora</span>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded-full border text-primary border-primary/30 bg-primary/10">{liveWars.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {liveWars.map((w) => (
+                        <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {upcomingWars.length > 0 && (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-400/70" />
+                      <span className="font-display font-bold tracking-widest uppercase text-amber-400/80 text-sm">Próximos Hoy</span>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded-full border text-amber-400 border-amber-400/30 bg-amber-400/10">{upcomingWars.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {upcomingWars.map((w) => (
+                        <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {terminadasHoy.length > 0 && (
+                  <section className="space-y-3">
+                    <button
+                      onClick={() => setShowTerminadas((v) => !v)}
+                      className="w-full flex items-center gap-3 pb-2 border-b border-border/30 hover:border-border/50 transition-colors group"
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                      <span className="font-display font-bold tracking-widest uppercase text-muted-foreground/60 group-hover:text-muted-foreground text-sm transition-colors">Terminadas Hoy</span>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded-full border text-muted-foreground border-border/30 bg-secondary/30">{terminadasHoy.length}</span>
+                      <span className="ml-auto text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+                        {showTerminadas ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </span>
+                    </button>
+                    {showTerminadas && (
+                      <div className="space-y-2 opacity-60">
+                        {terminadasHoy.map((w) => (
+                          <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
+                        ))}
+                      </div>
+                    )}
+                    {!showTerminadas && (
+                      <p className="text-xs text-muted-foreground/40 font-mono text-center">
+                        Toca para ver · Se borran automáticamente a las 00:00 SV
+                      </p>
+                    )}
+                  </section>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── MAÑANA ── */}
+          <div className="space-y-5">
+            <DaySectionHeader
+              title="Mañana"
+              count={tomorrowList.length}
+              icon={<Sunrise className="w-5 h-5 text-violet-400" />}
+              accentClass="text-violet-400"
+              borderClass="border-violet-400/40"
+              badgeClass="text-violet-400 border-violet-400/30 bg-violet-400/10"
+            />
+
+            {tomorrowList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 border border-dashed border-border/40 rounded-2xl bg-card/20 space-y-3">
+                <Sunrise className="w-10 h-10 text-muted-foreground/30" />
+                <p className="font-mono text-muted-foreground text-sm uppercase tracking-widest">No hay partidas para mañana aún</p>
+              </div>
+            ) : (
+              <div className="space-y-2 opacity-90">
+                {tomorrowList.map((w) => (
                   <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </div>
 
-          {upcomingWars.length > 0 && (
-            <section className="space-y-3">
-              <SectionHeader
-                title="Próximos Hoy"
-                count={upcomingWars.length}
-                icon={<Clock className="w-4 h-4 text-foreground/70" />}
-              />
-              <div className="space-y-2">
-                {upcomingWars.map((w) => (
-                  <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {upcomingWars.length === 0 && liveWars.length === 0 && terminadasHoy.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-16 border border-dashed border-border/40 rounded-2xl bg-card/20 space-y-3">
-              <Calendar className="w-10 h-10 text-muted-foreground/30" />
-              <p className="font-mono text-muted-foreground text-sm uppercase tracking-widest">No hay partidas para hoy</p>
-            </div>
-          )}
-
-          {terminadasHoy.length > 0 && (
-            <section className="space-y-3">
-              <button
-                onClick={() => setShowTerminadas((v) => !v)}
-                className="w-full flex items-center gap-3 pb-2 border-b border-border/30 hover:border-border/50 transition-colors group"
-              >
-                <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40 shrink-0" />
-                <span className="font-display font-bold tracking-widest uppercase text-muted-foreground/60 group-hover:text-muted-foreground text-base transition-colors">Terminadas Hoy</span>
-                <span className="text-xs font-mono px-2 py-0.5 rounded-full border text-muted-foreground border-border/30 bg-secondary/30">{terminadasHoy.length}</span>
-                <span className="ml-auto text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
-                  {showTerminadas ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </span>
-              </button>
-              {showTerminadas && (
-                <div className="space-y-2 opacity-60">
-                  {terminadasHoy.map((w) => (
-                    <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
-                  ))}
-                </div>
-              )}
-              {!showTerminadas && (
-                <p className="text-xs text-muted-foreground/40 font-mono text-center">
-                  Toca para ver · Se borran automáticamente a las 00:00 SV
-                </p>
-              )}
-            </section>
-          )}
-
-          {tomorrowList.length > 0 && (
-            <section className="space-y-3 pt-2">
-              <SectionHeader
-                title="Mañana"
-                count={tomorrowList.length}
-                icon={<div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/50" />}
-              />
-              {loadingTomorrow ? (
-                <WarListSkeleton />
-              ) : (
-                <div className="space-y-2 opacity-80">
-                  {tomorrowList.map((w) => (
-                    <MatchRow key={w.id} war={w} onClick={() => setSelectedWar(w)} />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
         </div>
       )}
 
