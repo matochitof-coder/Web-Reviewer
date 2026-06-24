@@ -456,4 +456,121 @@ router.get("/paises/:locationId/jugadores", async (req, res) => {
   }
 });
 
+
+// ─── Top Clanes por país ──────────────────────────────────────────────────────
+
+router.get("/paises/:locationId/clanes", async (req, res) => {
+  const { locationId } = req.params;
+  try {
+    const data = (await cocApiGet(`/locations/${locationId}/rankings/clans?limit=10`)) as {
+      items?: Array<{
+        tag: string; name: string; clanLevel: number; clanPoints: number;
+        members: number; rank?: number;
+        badgeUrls?: { small?: string };
+        location?: { name: string; countryCode?: string };
+      }>;
+    };
+    const clans = (data.items ?? []).map((c, i) => ({
+      rank: c.rank ?? i + 1,
+      tag: c.tag, name: c.name, level: c.clanLevel,
+      trophies: c.clanPoints, members: c.members,
+      badgeUrl: c.badgeUrls?.small ?? null,
+      locationName: c.location?.name ?? null,
+      locationCountryCode: c.location?.countryCode ?? null,
+    }));
+    res.json({ clans });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching top clans for location");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
+// ─── Top 200 Mundial ──────────────────────────────────────────────────────────
+
+router.get("/ranking/mundial/jugadores", async (req, res) => {
+  try {
+    const data = (await cocApiGet("/locations/global/rankings/players?limit=200")) as {
+      items?: Array<{
+        tag: string; name: string; expLevel: number; trophies: number;
+        attackWins?: number; defenseWins?: number; rank?: number;
+        league?: { name: string; iconUrls?: { small?: string } };
+        clan?: { name: string; tag: string; badgeUrls?: { small?: string } };
+        country?: { name: string; countryCode: string };
+      }>;
+    };
+    const players = (data.items ?? []).map((p, i) => ({
+      rank: p.rank ?? i + 1,
+      tag: p.tag, name: p.name, level: p.expLevel,
+      trophies: p.trophies,
+      attackWins: p.attackWins ?? 0,
+      defenseWins: p.defenseWins ?? 0,
+      leagueName: p.league?.name ?? null,
+      leagueIconUrl: p.league?.iconUrls?.small ?? null,
+      clanName: p.clan?.name ?? null,
+      clanTag: p.clan?.tag ?? null,
+      clanBadgeUrl: p.clan?.badgeUrls?.small ?? null,
+      countryName: p.country?.name ?? null,
+      countryCode: p.country?.countryCode ?? null,
+    }));
+    res.json({ players });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching global player ranking");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
+router.get("/ranking/mundial/clanes", async (req, res) => {
+  try {
+    const data = (await cocApiGet("/locations/global/rankings/clans?limit=200")) as {
+      items?: Array<{
+        tag: string; name: string; clanLevel: number; clanPoints: number;
+        members: number; rank?: number;
+        badgeUrls?: { small?: string };
+        location?: { name: string; countryCode?: string };
+      }>;
+    };
+    const clans = (data.items ?? []).map((c, i) => ({
+      rank: c.rank ?? i + 1,
+      tag: c.tag, name: c.name, level: c.clanLevel,
+      trophies: c.clanPoints, members: c.members,
+      badgeUrl: c.badgeUrls?.small ?? null,
+      locationName: c.location?.name ?? null,
+      locationCountryCode: c.location?.countryCode ?? null,
+    }));
+    res.json({ clans });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching global clan ranking");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
+router.get("/ranking/mundial/jugadores-bb", async (req, res) => {
+  try {
+    const data = (await cocApiGet("/locations/global/rankings/players-builder-base?limit=200")) as {
+      items?: Array<{
+        tag: string; name: string; expLevel: number; builderBaseTrophies: number;
+        rank?: number;
+        builderBaseLeague?: { name: string; iconUrls?: { small?: string } };
+        clan?: { name: string; tag: string; badgeUrls?: { small?: string } };
+        country?: { name: string; countryCode: string };
+      }>;
+    };
+    const players = (data.items ?? []).map((p, i) => ({
+      rank: p.rank ?? i + 1,
+      tag: p.tag, name: p.name, level: p.expLevel,
+      trophies: p.builderBaseTrophies,
+      leagueName: p.builderBaseLeague?.name ?? null,
+      leagueIconUrl: p.builderBaseLeague?.iconUrls?.small ?? null,
+      clanName: p.clan?.name ?? null,
+      clanBadgeUrl: p.clan?.badgeUrls?.small ?? null,
+      countryName: p.country?.name ?? null,
+      countryCode: p.country?.countryCode ?? null,
+    }));
+    res.json({ players });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching global builder base player ranking");
+    res.status(502).json({ error: String(err) });
+  }
+});
+
 export default router;
