@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Swords, Trophy, Target, CalendarDays, Search, Shield, Settings, Globe } from "lucide-react";
+import { Radio, Trophy, Target, CalendarDays, Search, Shield, Settings, Globe, Swords } from "lucide-react";
 import { useTheme } from "@/context/theme";
 import { useLang } from "@/context/lang";
 
@@ -9,11 +9,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { lang, setLang, t } = useLang();
 
   const navItems = [
-    { href: "/",             label: t("nav_live_wars"),    icon: Swords },
-    { href: "/ranking",      label: t("nav_ranking"),      icon: Trophy },
-    { href: "/clasificatorio", label: t("nav_qualifier"),  icon: Target },
-    { href: "/torneos",      label: t("nav_tournaments"),  icon: CalendarDays },
-    { href: "/equipo",       label: t("nav_team_search"),  icon: Search },
+    { href: "/",               label: "En Vivo",             icon: Radio },
+    { href: "/matches",        label: "Matches",             icon: Swords },
+    { href: "/ranking",        label: t("nav_ranking"),      icon: Trophy },
+    { href: "/clasificatorio", label: t("nav_qualifier"),    icon: Target },
+    { href: "/torneos",        label: t("nav_tournaments"),  icon: CalendarDays },
+    { href: "/equipo",         label: t("nav_team_search"),  icon: Search },
     { href: "/mi-clan",        label: t("nav_mi_clan"),      icon: Shield },
     { href: "/paises",         label: "Top Países",          icon: Globe },
     { href: "/configuracion",  label: t("nav_config"),       icon: Settings },
@@ -29,7 +30,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <span className="font-display font-bold text-xl tracking-wider uppercase">{appName} Tracker</span>
         </div>
-        {/* Language toggle mobile */}
         <button
           onClick={() => setLang(lang === "es" ? "en" : "es")}
           className="text-lg leading-none px-2 py-1 rounded border border-border/40 hover:border-border transition-colors"
@@ -51,10 +51,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
+            const isLive = item.href === "/";
             return (
               <Link
                 key={item.href} href={item.href}
@@ -65,7 +66,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(0,210,255,0.5)]" />}
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                <div className="relative shrink-0">
+                  <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                  {isLive && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
                 <span className="font-display font-semibold tracking-wider text-sm truncate">{item.label}</span>
               </Link>
             );
@@ -92,6 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href;
+              const isLive = item.href === "/";
               return (
                 <Link
                   key={item.href} href={item.href}
@@ -101,7 +108,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       : "bg-secondary text-muted-foreground border border-transparent"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <div className="relative">
+                    <Icon className="w-3.5 h-3.5" />
+                    {isLive && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
+                  </div>
                   <span>{item.label}</span>
                 </Link>
               );
