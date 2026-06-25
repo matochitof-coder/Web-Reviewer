@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Radio, Trophy, Target, CalendarDays, Search, Shield, Settings, Globe, Swords } from "lucide-react";
+import { Radio, Trophy, Target, CalendarDays, Search, Shield, Settings, Globe, Swords, ScrollText } from "lucide-react";
 import { useTheme } from "@/context/theme";
 import { useLang } from "@/context/lang";
 
@@ -97,8 +97,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border/50">
-          <span className="text-xs text-muted-foreground font-mono opacity-50">{t("nav_footer")}</span>
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-border/50 space-y-2">
+          <Link
+            href="/legal"
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-xs font-mono ${
+              location === "/legal"
+                ? "text-primary bg-primary/10 border border-primary/20"
+                : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary/50 border border-transparent"
+            }`}
+          >
+            <ScrollText className="w-3.5 h-3.5 shrink-0" />
+            <span>Aviso Legal & Créditos</span>
+          </Link>
+          <span className="block text-xs text-muted-foreground font-mono opacity-40 px-3">{t("nav_footer")}</span>
         </div>
       </aside>
 
@@ -127,6 +139,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+            {/* Legal link at end of mobile nav */}
+            <Link href="/legal"
+              className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 text-xs font-display font-semibold tracking-wider ${
+                location === "/legal"
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-secondary text-muted-foreground border border-transparent"
+              }`}
+            >
+              <ScrollText className="w-3.5 h-3.5" />
+              <span>Legal</span>
+            </Link>
           </div>
         </nav>
 
