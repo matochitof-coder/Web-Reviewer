@@ -47,7 +47,7 @@ export default function Home() {
 
   const { data: todayWars = [], isLoading: loadingToday } = useGetCcnGuerras(
     { offset: 0 },
-    { query: { queryKey: getGetCcnGuerrasQueryKey({ offset: 0 }), refetchInterval: 30_000 } }
+    { query: { queryKey: getGetCcnGuerrasQueryKey({ offset: 0 }), refetchInterval: 90_000 } }
   );
 
   const { data: tomorrowWars = [], isLoading: loadingTomorrow } = useGetCcnGuerras(
