@@ -155,37 +155,83 @@ interface TeamEntry {
   profileurl: string;
 }
 
+
+// ─── War memory cache ─────────────────────────────────────────────────────────
+// Keeps wars visible even after they leave /matches/upcoming (i.e. when live)
+type CachedWar = {
+  id: string; homeTeam: string; awayTeam: string;
+  homeEloRank: string | null; awayEloRank: string | null;
+  scheduledAt: string; scheduledAtSv: string; scheduledAtAr: string;
+  tournamentName: string | null; hasStream: boolean;
+};
+const warMemory = new Map<string, { war: CachedWar; scheduledMs: number }>();
+
+const WAR_DURATION_MS = 7 * 60 * 60 * 1000;   // 7 h — CoC war lasts up to 24h, CCN matches ~7h
+const WAR_CACHE_TTL  = 9 * 60 * 60 * 1000;   // Evict 9 h after scheduled time
+
+function computeStatus(scheduledMs: number): string {
+  const now = Date.now();
+  if (now >= scheduledMs - 10 * 60 * 1000 && now <= scheduledMs + WAR_DURATION_MS) return "inprogress";
+  if (now > scheduledMs + WAR_DURATION_MS) return "finished";
+  return "scheduled";
+}
+
+function filterByOffset(matches: Array<CachedWar & { status: string }>, offset: number) {
+  if (isNaN(offset) || offset === 0) return matches;
+  return matches.filter((m) => {
+    try {
+      const d = new Date(m.scheduledAt);
+      const target = new Date();
+      target.setUTCDate(target.getUTCDate() + offset);
+      return (
+        d.getUTCFullYear() === target.getUTCFullYear() &&
+        d.getUTCMonth() === target.getUTCMonth() &&
+        d.getUTCDate() === target.getUTCDate()
+      );
+    } catch { return false; }
+  });
+}
+
 router.get("/ccn/guerras", async (req, res) => {
   const offset = parseInt(String(req.query.offset ?? "0"), 10);
+  const now = Date.now();
+
   try {
     const html = await ccnHtmlGet("/matches/upcoming");
-    const allMatches = parseMatchRows(html);
+    const fresh = parseMatchRows(html);
 
-    const filtered =
-      isNaN(offset) || offset === 0
-        ? allMatches
-        : allMatches.filter((m) => {
-            try {
-              const d = new Date(m.scheduledAt);
-              const target = new Date();
-              target.setUTCDate(target.getUTCDate() + offset);
-              return (
-                d.getUTCFullYear() === target.getUTCFullYear() &&
-                d.getUTCMonth() === target.getUTCMonth() &&
-                d.getUTCDate() === target.getUTCDate()
-              );
-            } catch {
-              return false;
-            }
-          });
+    // Upsert fresh matches into cache
+    for (const m of fresh) {
+      const scheduledMs = new Date(m.scheduledAt).getTime();
+      warMemory.set(m.id, { war: m, scheduledMs });
+    }
 
-    res.json(filtered);
+    // Evict expired entries
+    for (const [id, entry] of warMemory.entries()) {
+      if (now > entry.scheduledMs + WAR_CACHE_TTL) warMemory.delete(id);
+    }
+
+    // Build result from full cache (includes wars that just went live)
+    const allMatches = [...warMemory.values()]
+      .map(({ war, scheduledMs }) => ({ ...war, status: computeStatus(scheduledMs) }))
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+
+    res.json(filterByOffset(allMatches, offset));
   } catch (err) {
-    req.log.error({ err }, "Error fetching CCN guerras");
-    res.status(502).json({ error: "Could not fetch wars from CCN" });
+    req.log.error({ err }, "Error fetching CCN guerras — serving from cache");
+
+    // Serve stale cache rather than a hard error
+    const cached = [...warMemory.values()]
+      .map(({ war, scheduledMs }) => ({ ...war, status: computeStatus(scheduledMs) }))
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+
+    if (cached.length > 0) {
+      res.json(filterByOffset(cached, offset));
+    } else {
+      res.status(502).json({ error: "Could not fetch wars from CCN" });
+    }
   }
 });
-
 router.get("/ccn/ranking-elo", async (req, res) => {
   try {
     const data = (await ccnApiGet("/api/elo-rank")) as EloRankEntry[];
