@@ -5,7 +5,30 @@ const router: IRouter = Router();
 const CCN_BASE = "https://competitiveclash.network";
 const CCN_TOKEN = "4597f448-784d-45ab-8dd0-8a8e4eb9adbb";
 
-async function ccnApiGet(path: string): Promise<unknown> {
+// ─── Response-level HTTP cache ────────────────────────────────────────────────
+// Prevents hammering CCN on every user request.
+// Even with 50 concurrent users refreshing every 90 s, CCN only gets 1 req/TTL.
+type CacheEntry = { data: unknown; ts: number };
+const _responseCache = new Map<string, CacheEntry>();
+
+function getCached<T>(key: string, ttlMs: number): T | null {
+  const e = _responseCache.get(key);
+  if (e && Date.now() - e.ts < ttlMs) return e.data as T;
+  return null;
+}
+function setCache(key: string, data: unknown): void {
+  _responseCache.set(key, { data, ts: Date.now() });
+  // Prune old entries when cache grows large (>200 keys)
+  if (_responseCache.size > 200) {
+    const oldest = [..._responseCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+    if (oldest) _responseCache.delete(oldest[0]);
+  }
+}
+
+// Cached wrappers ─────────────────────────────────────────────────────────────
+async function ccnApiGet(path: string, ttlMs = 120_000): Promise<unknown> {
+  const cached = getCached<unknown>(`api:${path}`, ttlMs);
+  if (cached !== null) return cached;
   const res = await fetch(`${CCN_BASE}${path}`, {
     headers: {
       Authorization: `Bearer ${CCN_TOKEN}`,
@@ -15,19 +38,25 @@ async function ccnApiGet(path: string): Promise<unknown> {
     },
   });
   if (!res.ok) throw new Error(`CCN API error ${res.status} at ${path}`);
-  return res.json();
+  const data = await res.json();
+  setCache(`api:${path}`, data);
+  return data;
 }
 
-async function ccnHtmlGet(path: string): Promise<string> {
+async function ccnHtmlGet(path: string, ttlMs = 90_000): Promise<string> {
+  const cached = getCached<string>(`html:${path}`, ttlMs);
+  if (cached !== null) return cached;
   const res = await fetch(`${CCN_BASE}${path}`, {
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (compatible; CCN-War-Tracker/1.0)",
+      "User-Agent": "Mozilla/5.0 (compatible; CCN-War-Tracker/1.0)",
       Accept: "text/html",
     },
   });
   if (!res.ok) throw new Error(`CCN HTML fetch error ${res.status} at ${path}`);
-  return res.text();
+  const html = await res.text();
+  setCache(`html:${path}`, html);
+  return html;
+}
 }
 
 function stripTags(html: string): string {
