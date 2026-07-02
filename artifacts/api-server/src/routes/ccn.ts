@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -218,6 +219,82 @@ function filterByOffset(matches: Array<CachedWar & { status: string }>, offset: 
       );
     } catch { return false; }
   });
+}
+
+// ─── Background polling ────────────────────────────────────────────────────────
+// Proactively fetches CCN data so the cache is always warm and users get
+// instant responses without waiting for an on-demand CCN round-trip.
+
+const POLL_WARS_MS = 2 * 60 * 1000;   // 2 min — wars update frequently
+const POLL_ELO_MS  = 10 * 60 * 1000;  // 10 min — ranking changes slowly
+
+/** Fetches fresh war HTML from CCN, warms the cache, and updates warMemory. */
+async function pollWars(): Promise<void> {
+  const res = await fetch(`${CCN_BASE}/matches/upcoming`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; CCN-War-Tracker/1.0)",
+      Accept: "text/html",
+    },
+  });
+  if (!res.ok) throw new Error(`CCN HTML ${res.status}`);
+  const html = await res.text();
+
+  // Warm the shared response cache so on-demand requests skip the CCN trip
+  setCache("html:/matches/upcoming", html);
+
+  const fresh = parseMatchRows(html);
+  const now = Date.now();
+  for (const m of fresh) {
+    const scheduledMs = new Date(m.scheduledAt).getTime();
+    warMemory.set(m.id, { war: m, scheduledMs });
+  }
+  for (const [id, entry] of warMemory.entries()) {
+    if (now > entry.scheduledMs + WAR_CACHE_TTL) warMemory.delete(id);
+  }
+}
+
+/** Fetches fresh ELO ranking from CCN API and warms the response cache. */
+async function pollElo(): Promise<void> {
+  const res = await fetch(`${CCN_BASE}/api/elo-rank`, {
+    headers: {
+      Authorization: `Bearer ${CCN_TOKEN}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "User-Agent": "CCN-War-Tracker/1.0",
+    },
+  });
+  if (!res.ok) throw new Error(`CCN API ${res.status}`);
+  const data = await res.json();
+  setCache("api:/api/elo-rank", data);
+}
+
+/**
+ * Starts background polling of CCN data.
+ * Call once after the server starts listening.
+ * Wars are refreshed every 2 min; ELO ranking every 10 min.
+ */
+export function startPolling(): void {
+  // Prime the caches immediately on startup
+  void pollWars()
+    .then(() => logger.info("CCN poll: wars primed"))
+    .catch((e: unknown) => logger.error({ err: e }, "CCN poll: initial war fetch failed"));
+
+  void pollElo()
+    .then(() => logger.info("CCN poll: ELO primed"))
+    .catch((e: unknown) => logger.error({ err: e }, "CCN poll: initial ELO fetch failed"));
+
+  // Recurring background refresh
+  setInterval(() => {
+    void pollWars()
+      .then(() => logger.info("CCN poll: wars refreshed"))
+      .catch((e: unknown) => logger.error({ err: e }, "CCN poll: war refresh failed"));
+  }, POLL_WARS_MS);
+
+  setInterval(() => {
+    void pollElo()
+      .then(() => logger.info("CCN poll: ELO refreshed"))
+      .catch((e: unknown) => logger.error({ err: e }, "CCN poll: ELO refresh failed"));
+  }, POLL_ELO_MS);
 }
 
 router.get("/ccn/guerras", async (req, res) => {

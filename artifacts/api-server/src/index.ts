@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { startPolling } from "./routes/ccn";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Start background polling of CCN data (wars every 2 min, ELO every 10 min)
+  startPolling();
 });
