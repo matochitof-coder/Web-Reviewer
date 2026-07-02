@@ -258,6 +258,8 @@ router.get("/clan/:tag/cwl", async (req, res) => {
       if (!war) continue;
       const w = war as {
         state?: string;
+        startTime?: string;
+        endTime?: string;
         clan?: { tag?: string; name?: string; badgeUrls?: { small?: string }; stars?: number; attacks?: number; destructionPercentage?: number; members?: Array<{ tag: string; name: string; mapPosition: number; townhallLevel: number; attacks?: Array<{ stars: number; destructionPercentage: number; defenderTag: string }> }> };
         opponent?: { tag?: string; name?: string; badgeUrls?: { small?: string }; stars?: number; attacks?: number; destructionPercentage?: number };
         teamSize?: number;
@@ -287,6 +289,8 @@ router.get("/clan/:tag/cwl", async (req, res) => {
         state: w.state,
         result,
         teamSize: w.teamSize ?? 15,
+        startTime: w.startTime ?? null,
+        endTime: w.endTime ?? null,
         ourName: us?.name, ourBadgeUrl: us?.badgeUrls?.small,
         ourStars, ourAttacks: us?.attacks ?? 0,
         ourDestructionPercentage: us?.destructionPercentage ?? 0,

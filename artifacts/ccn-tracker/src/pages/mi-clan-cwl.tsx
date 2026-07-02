@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Trophy, Star } from "lucide-react";
+import { Trophy, Star, Swords } from "lucide-react";
 
 type CWLWar = {
   round: number; state: string; result: string; teamSize: number;
+  startTime: string | null; endTime: string | null;
   ourName: string; ourBadgeUrl: string | null; ourStars: number; ourAttacks: number; ourDestructionPercentage: number;
   opponentName: string; opponentBadgeUrl: string | null; opponentStars: number; opponentAttacks: number; opponentDestructionPercentage: number;
   members: Array<{ tag: string; name: string; mapPosition: number; townhallLevel: number; attacks: Array<{ stars: number; destructionPercentage: number; defenderTag: string }> }>;
@@ -28,6 +29,91 @@ const RESULT_LABEL: Record<string, string> = {
   win: "Victoria", lose: "Derrota", tie: "Empate",
   inWar: "En curso", upcoming: "Próxima", unknown: "—",
 };
+
+// ─── Countdown helpers ────────────────────────────────────────────────────────
+
+/** CoC time format: 20231015T120000.000Z → Date */
+function parseCocTime(raw: string): Date | null {
+  const m = raw.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+  if (!m) return null;
+  return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.000Z`);
+}
+
+function useCountdown(endTime: string | null | undefined): number {
+  const getMs = () => {
+    if (!endTime) return 0;
+    const end = parseCocTime(endTime);
+    if (!end) return 0;
+    return Math.max(0, end.getTime() - Date.now());
+  };
+  const [remaining, setRemaining] = useState<number>(getMs);
+  useEffect(() => {
+    if (!endTime) return;
+    const id = setInterval(() => setRemaining(getMs()), 1000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endTime]);
+  return remaining;
+}
+
+function WarCountdown({ war }: { war: CWLWar }) {
+  const ms = useCountdown(war.endTime);
+  const isUrgent = ms > 0 && ms < 60 * 60 * 1000;   // < 1 h  → naranja/rojo
+  const isEnded  = ms === 0;
+  const totalSecs = Math.floor(ms / 1000);
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  const fmt = (n: number) => String(n).padStart(2, "0");
+
+  const color = isUrgent
+    ? { ring: "border-orange-500/50", bg: "bg-orange-500/10", dot: "bg-orange-400", label: "text-orange-400", digits: "text-orange-300" }
+    : { ring: "border-cyan-500/40",   bg: "bg-cyan-500/8",    dot: "bg-cyan-400",   label: "text-cyan-400",   digits: "text-cyan-200"   };
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border ${color.ring} ${color.bg} p-5 text-center`}>
+      {/* Faint glow blob behind the digits */}
+      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
+        <div className={`w-48 h-24 rounded-full opacity-20 blur-3xl ${isUrgent ? "bg-orange-400" : "bg-cyan-400"}`} />
+      </div>
+
+      {/* Header label */}
+      <div className="relative flex items-center justify-center gap-2 mb-3">
+        <span className={`w-2 h-2 rounded-full animate-pulse ${color.dot}`} />
+        <Swords className={`w-4 h-4 ${color.label}`} />
+        <span className={`text-xs font-bold uppercase tracking-[0.2em] ${color.label}`}>
+          {isEnded ? "Terminando…" : "Guerra en curso"}
+        </span>
+        <Swords className={`w-4 h-4 ${color.label}`} />
+        <span className={`w-2 h-2 rounded-full animate-pulse ${color.dot}`} />
+      </div>
+
+      {/* Countdown digits */}
+      <div className={`relative font-mono font-black tracking-tight leading-none ${color.digits}`}
+           style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)" }}>
+        {fmt(h)}
+        <span className="opacity-40 animate-pulse mx-0.5">:</span>
+        {fmt(m)}
+        <span className="opacity-40 animate-pulse mx-0.5">:</span>
+        {fmt(s)}
+      </div>
+
+      <p className="relative text-xs text-muted-foreground mt-2 tracking-wide">tiempo restante · Ronda {war.round}</p>
+
+      {/* Attackers bar */}
+      <div className="relative mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-lg bg-black/20 px-3 py-1.5">
+          <span className="text-yellow-400 font-bold">{war.ourStars}⭐</span>
+          <span className="text-muted-foreground"> {war.ourAttacks} atqs</span>
+        </div>
+        <div className="rounded-lg bg-black/20 px-3 py-1.5">
+          <span className="text-muted-foreground">{war.opponentStars}⭐</span>
+          <span className="text-muted-foreground"> {war.opponentAttacks} atqs</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Stars({ count, max }: { count: number; max: number }) {
   return (
@@ -95,8 +181,13 @@ export default function CWLTab({ clanTag }: { clanTag: string }) {
     (a, b) => b.stars - a.stars || b.attacks - a.attacks,
   );
 
+  const activeWar = cwl.wars.find((w) => w.result === "inWar");
+
   return (
     <div className="space-y-5">
+      {/* Countdown — only when a war is live */}
+      {activeWar && <WarCountdown war={activeWar} />}
+
       {/* Header */}
       <div className="border border-border/50 rounded-xl bg-card/60 p-4">
         <div className="flex items-center justify-between mb-3">
