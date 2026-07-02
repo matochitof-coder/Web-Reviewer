@@ -19,13 +19,17 @@ function WarListSkeleton() {
 
 function isLiveWar(war: CcnGuerraItem): boolean {
   const s = war.status.toLowerCase();
+  // Trust the backend's "finished" status — never show a finished war as live
+  if (s === "finished" || s === "finalizada") return false;
   if (s === "inprogress" || s === "live" || s === "en progreso") return true;
+  // Fallback time-based check (should rarely be needed; keep window at 3h to
+  // match the backend WAR_BATTLE_DURATION_MS so they stay in sync)
   if (!war.scheduledAt) return false;
   const scheduled = new Date(war.scheduledAt as string).getTime();
   const now = Date.now();
-  const sevenHoursMs = 7 * 60 * 60 * 1000;
+  const threeHoursMs = 3 * 60 * 60 * 1000;
   const tenMinMs = 10 * 60 * 1000;
-  return now >= scheduled - tenMinMs && now <= scheduled + sevenHoursMs;
+  return now >= scheduled - tenMinMs && now <= scheduled + threeHoursMs;
 }
 
 function getNextWar(wars: CcnGuerraItem[]): CcnGuerraItem | null {

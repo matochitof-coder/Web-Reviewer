@@ -186,23 +186,45 @@ interface TeamEntry {
 
 
 // ─── War memory cache ─────────────────────────────────────────────────────────
-// Keeps wars visible even after they leave /matches/upcoming (i.e. when live)
+// Wars appear on CCN /matches/upcoming while SCHEDULED, then disappear when
+// they START (go live).  We track lastSeenInUpcomingMs so that once a war
+// leaves the upcoming page (= started), we can declare it "finished" after a
+// reasonable battle window without relying on a hard-coded 7-hour guess.
 type CachedWar = {
   id: string; homeTeam: string; awayTeam: string;
   homeEloRank: string | null; awayEloRank: string | null;
   scheduledAt: string; scheduledAtSv: string; scheduledAtAr: string;
   tournamentName: string | null; hasStream: boolean;
 };
-const warMemory = new Map<string, { war: CachedWar; scheduledMs: number }>();
+type WarEntry = {
+  war: CachedWar;
+  scheduledMs: number;
+  /** Timestamp of the last poll that found this war on /matches/upcoming. */
+  lastSeenInUpcomingMs: number;
+  /** Consecutive polls where the war was absent from /matches/upcoming (0 = still upcoming). */
+  missedPolls: number;
+};
+const warMemory = new Map<string, WarEntry>();
 
-const WAR_DURATION_MS = 7 * 60 * 60 * 1000;   // 7 h — CoC war lasts up to 24h, CCN matches ~7h
-const WAR_CACHE_TTL  = 9 * 60 * 60 * 1000;   // Evict 9 h after scheduled time
+/** Battle window: max duration we wait after a war leaves CCN upcoming before declaring it finished. */
+const WAR_BATTLE_DURATION_MS = 3 * 60 * 60 * 1000;   // 3 h covers most CCN competition formats
+const WAR_CACHE_TTL           = 9 * 60 * 60 * 1000;   // Evict entry 9 h after scheduled time
 
-function computeStatus(scheduledMs: number): string {
+function computeStatus(entry: WarEntry): string {
   const now = Date.now();
-  if (now >= scheduledMs - 10 * 60 * 1000 && now <= scheduledMs + WAR_DURATION_MS) return "inprogress";
-  if (now > scheduledMs + WAR_DURATION_MS) return "finished";
-  return "scheduled";
+
+  if (entry.missedPolls === 0) {
+    // War is still visible on CCN upcoming page — has not started yet.
+    // Show as "inprogress" in the 10-min lead-up window so the UI surfaces it as live.
+    if (now >= entry.scheduledMs - 10 * 60 * 1000) return "inprogress";
+    return "scheduled";
+  }
+
+  // War has left CCN upcoming page → it has started.
+  // lastSeenInUpcomingMs ≈ the moment it was last seen before starting.
+  // After WAR_BATTLE_DURATION_MS from that moment, the war has ended.
+  if (now > entry.lastSeenInUpcomingMs + WAR_BATTLE_DURATION_MS) return "finished";
+  return "inprogress";
 }
 
 function filterByOffset(matches: Array<CachedWar & { status: string }>, offset: number) {
@@ -243,11 +265,23 @@ async function pollWars(): Promise<void> {
   setCache("html:/matches/upcoming", html);
 
   const fresh = parseMatchRows(html);
+  const freshIds = new Set(fresh.map((m) => m.id));
   const now = Date.now();
+
+  // Upsert wars present in the fresh data (reset missedPolls)
   for (const m of fresh) {
     const scheduledMs = new Date(m.scheduledAt).getTime();
-    warMemory.set(m.id, { war: m, scheduledMs });
+    warMemory.set(m.id, { war: m, scheduledMs, lastSeenInUpcomingMs: now, missedPolls: 0 });
   }
+
+  // Increment missedPolls for wars that left the upcoming page (started)
+  for (const [id, entry] of warMemory.entries()) {
+    if (!freshIds.has(id)) {
+      warMemory.set(id, { ...entry, missedPolls: entry.missedPolls + 1 });
+    }
+  }
+
+  // Evict very stale entries
   for (const [id, entry] of warMemory.entries()) {
     if (now > entry.scheduledMs + WAR_CACHE_TTL) warMemory.delete(id);
   }
@@ -304,21 +338,29 @@ router.get("/ccn/guerras", async (req, res) => {
   try {
     const html = await ccnHtmlGet("/matches/upcoming");
     const fresh = parseMatchRows(html);
+    const freshIds = new Set(fresh.map((m) => m.id));
 
-    // Upsert fresh matches into cache
+    // Upsert fresh matches (reset missedPolls — war is still in upcoming)
     for (const m of fresh) {
       const scheduledMs = new Date(m.scheduledAt).getTime();
-      warMemory.set(m.id, { war: m, scheduledMs });
+      warMemory.set(m.id, { war: m, scheduledMs, lastSeenInUpcomingMs: now, missedPolls: 0 });
     }
 
-    // Evict expired entries
+    // Increment missedPolls for wars no longer on the upcoming page (started)
+    for (const [id, entry] of warMemory.entries()) {
+      if (!freshIds.has(id)) {
+        warMemory.set(id, { ...entry, missedPolls: entry.missedPolls + 1 });
+      }
+    }
+
+    // Evict very stale entries
     for (const [id, entry] of warMemory.entries()) {
       if (now > entry.scheduledMs + WAR_CACHE_TTL) warMemory.delete(id);
     }
 
-    // Build result from full cache (includes wars that just went live)
+    // Build result from full cache
     const allMatches = [...warMemory.values()]
-      .map(({ war, scheduledMs }) => ({ ...war, status: computeStatus(scheduledMs) }))
+      .map((entry) => ({ ...entry.war, status: computeStatus(entry) }))
       .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
     res.json(filterByOffset(allMatches, offset));
@@ -327,7 +369,7 @@ router.get("/ccn/guerras", async (req, res) => {
 
     // Serve stale cache rather than a hard error
     const cached = [...warMemory.values()]
-      .map(({ war, scheduledMs }) => ({ ...war, status: computeStatus(scheduledMs) }))
+      .map((entry) => ({ ...entry.war, status: computeStatus(entry) }))
       .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
     if (cached.length > 0) {
