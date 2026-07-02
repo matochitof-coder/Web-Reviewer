@@ -307,6 +307,10 @@ router.get("/clan/:tag/cwl", async (req, res) => {
       clans: (group.clans ?? []).map((c) => ({
         tag: c.tag, name: c.name, level: c.clanLevel, badgeUrl: c.badgeUrls?.small,
         isOurs: c.tag === clanTagFull,
+        // Include full member list for our clan so UI can show all 30 CWL participants
+        members: c.tag === clanTagFull
+          ? (c.members ?? []).map((m) => ({ tag: m.tag, name: m.name, townHallLevel: m.townHallLevel }))
+          : undefined,
       })),
       wars: ourWars,
     });

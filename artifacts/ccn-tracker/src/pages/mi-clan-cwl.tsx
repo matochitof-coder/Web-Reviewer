@@ -8,9 +8,11 @@ type CWLWar = {
   members: Array<{ tag: string; name: string; mapPosition: number; townhallLevel: number; attacks: Array<{ stars: number; destructionPercentage: number; defenderTag: string }> }>;
 };
 
+type CWLClanMember = { tag: string; name: string; townHallLevel: number };
+
 type CWLData = {
   state: string; season: string | null;
-  clans: Array<{ tag: string; name: string; level: number; badgeUrl: string | null; isOurs: boolean }>;
+  clans: Array<{ tag: string; name: string; level: number; badgeUrl: string | null; isOurs: boolean; members?: CWLClanMember[] }>;
   wars: CWLWar[];
 };
 
@@ -72,8 +74,13 @@ export default function CWLTab({ clanTag }: { clanTag: string }) {
   const wins = cwl.wars.filter((w) => w.result === "win").length;
   const losses = cwl.wars.filter((w) => w.result === "lose").length;
 
-  // Member star totals across all CWL wars
+  // Build member star totals — seed from full 30-player CWL roster so players with 0
+  // attacks still appear, then overlay actual war attack data on top.
   const memberStars: Record<string, { name: string; stars: number; attacks: number }> = {};
+  const ourClan = cwl.clans.find((c) => c.isOurs);
+  for (const m of ourClan?.members ?? []) {
+    memberStars[m.tag] = { name: m.name, stars: 0, attacks: 0 };
+  }
   for (const war of cwl.wars) {
     for (const m of war.members) {
       if (!memberStars[m.tag]) memberStars[m.tag] = { name: m.name, stars: 0, attacks: 0 };
@@ -83,7 +90,10 @@ export default function CWLTab({ clanTag }: { clanTag: string }) {
       }
     }
   }
-  const topContributors = Object.values(memberStars).sort((a, b) => b.stars - a.stars).slice(0, 10);
+  // Sort by stars desc, then attacks desc — show all members (no cap)
+  const topContributors = Object.values(memberStars).sort(
+    (a, b) => b.stars - a.stars || b.attacks - a.attacks,
+  );
 
   return (
     <div className="space-y-5">

@@ -56,7 +56,11 @@ export const GetCcnRankingEloResponseItem = zod.object({
   "wins": zod.number(),
   "losses": zod.number(),
   "clanTag": zod.string().nullish(),
-  "badgeUrl": zod.string().nullish()
+  "badgeUrl": zod.string().nullish(),
+  "twitter": zod.string().nullish(),
+  "profileUrl": zod.string().nullish(),
+  "eloClassic": zod.number().nullish(),
+  "rankClassic": zod.number().nullish()
 })
 export const GetCcnRankingEloResponse = zod.array(GetCcnRankingEloResponseItem)
 

@@ -17,4 +17,12 @@ export interface CcnRankingEloItem {
   clanTag?: string | null;
   /** @nullable */
   badgeUrl?: string | null;
+  /** @nullable */
+  twitter?: string | null;
+  /** @nullable */
+  profileUrl?: string | null;
+  /** @nullable */
+  eloClassic?: number | null;
+  /** @nullable */
+  rankClassic?: number | null;
 }

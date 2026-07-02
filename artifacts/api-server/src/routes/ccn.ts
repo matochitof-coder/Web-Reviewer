@@ -269,6 +269,9 @@ router.get("/ccn/ranking-elo", async (req, res) => {
       teamId: String(entry.team_id),
       teamName: entry.team.team_name,
       elo: entry.elo_points,
+      // wins/losses not provided by CCN ELO API; default to 0
+      wins: 0,
+      losses: 0,
       eloClassic: entry.elo_points_classic,
       rankClassic: entry.elo_rank_classic,
       badgeUrl: entry.team.has_image

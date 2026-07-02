@@ -301,6 +301,14 @@ components:
           type: ["string", "null"]
         badgeUrl:
           type: ["string", "null"]
+        twitter:
+          type: ["string", "null"]
+        profileUrl:
+          type: ["string", "null"]
+        eloClassic:
+          type: ["number", "null"]
+        rankClassic:
+          type: ["integer", "null"]
       required:
         - rank
         - teamId
