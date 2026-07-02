@@ -57,7 +57,6 @@ async function ccnHtmlGet(path: string, ttlMs = 90_000): Promise<string> {
   setCache(`html:${path}`, html);
   return html;
 }
-}
 
 function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
