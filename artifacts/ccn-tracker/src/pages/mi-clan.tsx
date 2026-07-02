@@ -328,7 +328,15 @@ export default function MiClan() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clanTag, setClanTag] = useState<string>(() => getClanTag());
-  const [tab, setTab] = useState<Tab>("ranking");
+  const SESSION_TAB_KEY = "ccn_miclan_tab";
+  const [tab, setTab] = useState<Tab>(
+    () => (sessionStorage.getItem(SESSION_TAB_KEY) as Tab | null) ?? "ranking",
+  );
+
+  function changeTab(id: Tab) {
+    sessionStorage.setItem(SESSION_TAB_KEY, id);
+    setTab(id);
+  }
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [selectedPlayer, setSelectedPlayer] = useState<{ tag: string; name: string } | null>(null);
   const [editingTag, setEditingTag] = useState(false);
@@ -580,7 +588,7 @@ export default function MiClan() {
           <div className="overflow-x-auto no-scrollbar -mx-4 px-4">
             <div className="flex gap-1 bg-secondary/40 p-1 rounded-xl border border-border/30 min-w-max">
               {TABS.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)}
+                <button key={t.id} onClick={() => changeTab(t.id)}
                   className={`flex items-center gap-1.5 py-2 px-3 rounded-lg text-xs font-display font-semibold tracking-wider transition-all whitespace-nowrap ${
                     tab === t.id ? "bg-primary/20 text-primary border border-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}>

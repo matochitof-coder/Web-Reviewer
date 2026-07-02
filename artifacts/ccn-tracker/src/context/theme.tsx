@@ -22,6 +22,7 @@ export const COLOR_THEMES: ColorTheme[] = [
   { id: "indigo",   name: "Índigo",              nameEn: "Indigo",          primary: "240 100% 65%", accent: "45 100% 50%",  ring: "240 100% 65%" },
   { id: "white",    name: "Blanco platino",      nameEn: "Platinum White",  primary: "0 0% 90%",     accent: "190 100% 50%", ring: "0 0% 90%" },
   { id: "rose",     name: "Carmesí",             nameEn: "Crimson",         primary: "350 100% 50%", accent: "270 100% 65%", ring: "350 100% 50%" },
+  { id: "th18",     name: "TH18",                nameEn: "TH18",            primary: "216 90% 60%",  accent: "43 95% 52%",   ring: "216 90% 60%" },
 ];
 
 export type FontPreset = {
